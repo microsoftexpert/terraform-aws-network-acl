@@ -37,16 +37,16 @@ Whether it's a star, a professional connection, or a coffee, every gesture helps
 
 ## 🗺️ Where this fits in the family
 
-`tf-mod-aws-network-acl` sits in the **networking** layer alongside `tf-mod-aws-security-group`. It consumes `vpc_id` and `subnet_ids` from `tf-mod-aws-vpc` and protects the same subnets that compute, database, and load-balancing modules launch into.
+`terraform-aws-network-acl` sits in the **networking** layer alongside `terraform-aws-security-group`. It consumes `vpc_id` and `subnet_ids` from `terraform-aws-vpc` and protects the same subnets that compute, database, and load-balancing modules launch into.
 
 ```mermaid
 flowchart LR
- vpc["tf-mod-aws-vpc<br/>vpc_id + subnet_ids"]
- nacl["tf-mod-aws-network-acl<br/>(stateless, subnet-level)"]
- sg["tf-mod-aws-security-group<br/>(stateful, ENI-level)"]
- lb["tf-mod-aws-lb"]
- rds["tf-mod-aws-rds"]
- ec2["tf-mod-aws-ec2-instance"]
+ vpc["terraform-aws-vpc<br/>vpc_id + subnet_ids"]
+ nacl["terraform-aws-network-acl<br/>(stateless, subnet-level)"]
+ sg["terraform-aws-security-group<br/>(stateful, ENI-level)"]
+ lb["terraform-aws-lb"]
+ rds["terraform-aws-rds"]
+ ec2["terraform-aws-ec2-instance"]
 
  vpc -->|"vpc_id"| nacl
  vpc -->|"subnet_ids"| nacl
@@ -64,7 +64,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
- subgraph mod["tf-mod-aws-network-acl"]
+ subgraph mod["terraform-aws-network-acl"]
  acl["aws_network_acl.this<br/>(keystone)<br/>vpc_id + Name tag"]
  rule["aws_network_acl_rule.this<br/>for_each ingress + egress<br/>(namespaced keys)"]
  assoc["aws_network_acl_association.this<br/>for_each subnet_ids"]
@@ -120,7 +120,7 @@ Least-privilege actions the **Terraform execution identity** needs to manage thi
 
 - **No service-linked role** is required for network ACLs.
 - **No account opt-in** is required.
-- **VPC + subnets must exist.** Wire `vpc_id` and `subnet_ids` from `tf-mod-aws-vpc`. The NACL is **regional and VPC-scoped** — it must be created in the same Region as the VPC and subnets it protects.
+- **VPC + subnets must exist.** Wire `vpc_id` and `subnet_ids` from `terraform-aws-vpc`. The NACL is **regional and VPC-scoped** — it must be created in the same Region as the VPC and subnets it protects.
 - **Region.** Do **not** set a `region` variable; the caller's provider configuration selects the Region. There is **no `us-east-1` global-resource constraint** for NACLs.
 - **Quotas** (per [Amazon VPC quotas → Network ACLs](https://docs.aws.amazon.com/vpc/latest/userguide/amazon-vpc-limits.html)):
  - **200 network ACLs per VPC** (adjustable via Service Quotas).
@@ -133,7 +133,7 @@ Least-privilege actions the **Terraform execution identity** needs to manage thi
 ## 📁 Module Structure
 
 ```
-tf-mod-aws-network-acl/
+terraform-aws-network-acl/
 ├── providers.tf # required_providers (aws >= 6.0, < 7.0); no provider block
 ├── variables.tf # name → vpc_id → ingress_rules → egress_rules → subnet_ids → tags
 ├── main.tf # aws_network_acl.this + rule (for_each) + association (for_each)
@@ -146,11 +146,11 @@ tf-mod-aws-network-acl/
 
 ## ⚙️ Quick Start
 
-Smallest working call — a private-subnet NACL allowing HTTPS in and ephemeral return traffic out, wired from `tf-mod-aws-vpc`:
+Smallest working call — a private-subnet NACL allowing HTTPS in and ephemeral return traffic out, wired from `terraform-aws-vpc`:
 
 ```hcl
 module "app_nacl" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-aws-network-acl?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-aws-network-acl?ref=v1.0.0"
 
   name   = "casey-app-private"
   vpc_id = module.vpc.vpc_id
@@ -183,8 +183,8 @@ module "app_nacl" {
 
 | Input | Type | Source module |
 |---|---|---|
-| `vpc_id` | `string` (VPC id) | `tf-mod-aws-vpc` |
-| `subnet_ids` | `map(string)` (subnet ids, caller-labeled) | `tf-mod-aws-vpc` |
+| `vpc_id` | `string` (VPC id) | `terraform-aws-vpc` |
+| `subnet_ids` | `map(string)` (subnet ids, caller-labeled) | `terraform-aws-vpc` |
 
 > Networking module — it needs `vpc_id` from an upstream VPC; `subnet_ids` is optional (omit to leave subnets on the default NACL).
 
@@ -211,7 +211,7 @@ module "app_nacl" {
 
 ```hcl
 module "baseline_nacl" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-aws-network-acl?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-aws-network-acl?ref=v1.0.0"
 
   name   = "casey-baseline"
   vpc_id = module.vpc.vpc_id
@@ -226,7 +226,7 @@ module "baseline_nacl" {
 
 ```hcl
 module "web_nacl" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-aws-network-acl?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-aws-network-acl?ref=v1.0.0"
 
   name   = "casey-web"
   vpc_id = module.vpc.vpc_id
@@ -255,7 +255,7 @@ provider "aws" {
 }
 
 module "tagged_nacl" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-aws-network-acl?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-aws-network-acl?ref=v1.0.0"
 
   name   = "casey-tagged" # applied as the Name tag; wins over any Name key in var.tags
   vpc_id = module.vpc.vpc_id
@@ -275,7 +275,7 @@ module "tagged_nacl" {
 
 ```hcl
 module "ipv6_nacl" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-aws-network-acl?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-aws-network-acl?ref=v1.0.0"
 
   name   = "casey-dualstack"
   vpc_id = module.vpc.vpc_id
@@ -296,7 +296,7 @@ module "ipv6_nacl" {
 
 ```hcl
 module "deny_then_allow_nacl" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-aws-network-acl?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-aws-network-acl?ref=v1.0.0"
 
   name   = "casey-blocklist"
   vpc_id = module.vpc.vpc_id
@@ -315,7 +315,7 @@ module "deny_then_allow_nacl" {
 
 ```hcl
 module "icmp_nacl" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-aws-network-acl?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-aws-network-acl?ref=v1.0.0"
 
   name   = "casey-diag"
   vpc_id = module.vpc.vpc_id
@@ -335,7 +335,7 @@ module "icmp_nacl" {
 
 ```hcl
 module "db_nacl" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-aws-network-acl?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-aws-network-acl?ref=v1.0.0"
 
   name   = "casey-db"
   vpc_id = module.vpc.vpc_id
@@ -352,7 +352,7 @@ module "db_nacl" {
     db-b = module.vpc.database_subnet_ids["b"]
   }
 }
-# Pairs with a stateful tf-mod-aws-security-group on the RDS instance — NACL is the coarse backstop.
+# Pairs with a stateful terraform-aws-security-group on the RDS instance — NACL is the coarse backstop.
 ```
 </details>
 
@@ -361,7 +361,7 @@ module "db_nacl" {
 
 ```hcl
 module "shared_nacl" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-aws-network-acl?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-aws-network-acl?ref=v1.0.0"
 
   name   = "casey-private-shared"
   vpc_id = module.vpc.vpc_id
@@ -385,7 +385,7 @@ module "shared_nacl" {
 
 ```hcl
 module "private_nacl" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-aws-network-acl?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-aws-network-acl?ref=v1.0.0"
 
   name   = "casey-private"
   vpc_id = module.vpc.vpc_id
@@ -407,7 +407,7 @@ module "private_nacl" {
 
 ```hcl
 module "dns_nacl" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-aws-network-acl?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-aws-network-acl?ref=v1.0.0"
 
   name   = "casey-resolver"
   vpc_id = module.vpc.vpc_id
@@ -428,7 +428,7 @@ module "dns_nacl" {
 
 ```hcl
 module "vpn_nacl" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-aws-network-acl?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-aws-network-acl?ref=v1.0.0"
 
   name   = "casey-ipsec"
   vpc_id = module.vpc.vpc_id
@@ -447,7 +447,7 @@ module "vpn_nacl" {
 # A NACL must live in the same Region as its VPC. There is NO us-east-1 global
 # constraint here — you simply pass whichever provider points at the VPC's Region.
 module "eu_nacl" {
-  source    = "git::https://github.com/microsoftexpert/tf-mod-aws-network-acl?ref=v1.0.0"
+  source    = "git::https://github.com/microsoftexpert/terraform-aws-network-acl?ref=v1.0.0"
   providers = { aws = aws.eu_west_1 }
 
   name       = "casey-eu-app"
@@ -466,7 +466,7 @@ module "eu_nacl" {
 # The secure default is deny-all. This example RELAXES it to allow-all both ways.
 # Document the justification in your root module; an SG should still constrain the ENI.
 module "permissive_nacl" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-aws-network-acl?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-aws-network-acl?ref=v1.0.0"
 
   name   = "casey-lab-open" # non-prod / lab only
   vpc_id = module.vpc.vpc_id
@@ -485,7 +485,7 @@ module "permissive_nacl" {
 ```hcl
 # Networking foundation
 module "vpc" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-aws-vpc?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-aws-vpc?ref=v1.0.0"
   name   = "casey-core"
   cidr   = "10.0.0.0/16"
   #... subnets, NAT, flow logs
@@ -493,7 +493,7 @@ module "vpc" {
 
 # Stateful, ENI-level control (primary)
 module "app_sg" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-aws-security-group?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-aws-security-group?ref=v1.0.0"
   name   = "casey-app"
   vpc_id = module.vpc.vpc_id
   #... ingress 443 from the ALB SG, egress to DB
@@ -501,7 +501,7 @@ module "app_sg" {
 
 # Stateless, subnet-level backstop (this module)
 module "app_nacl" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-aws-network-acl?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-aws-network-acl?ref=v1.0.0"
 
   name   = "casey-app-private"
   vpc_id = module.vpc.vpc_id
@@ -590,9 +590,9 @@ Secure-by-default posture and every opt-out, explicitly:
 > Network ACLs hold **no data at rest**, so encryption defaults are N/A. The secure posture here is the **deny-all baseline** plus the deliberate, layered relationship with security groups. Document each opt-out (especially Example 13's allow-all) in your root module so reviewers can see what was loosened.
 
 Other principles:
-- **One composite, one keystone.** The NACL owns only what is meaningless without it — its rules and its associations. The VPC and subnets it references are authored by `tf-mod-aws-vpc`.
+- **One composite, one keystone.** The NACL owns only what is meaningless without it — its rules and its associations. The VPC and subnets it references are authored by `terraform-aws-vpc`.
 - **`for_each`, never `count`,** for rules and associations — keyed by stable caller labels so reorders and single-item edits don't churn the plan or renumber unrelated rules.
-- **Defense-in-depth, not a replacement.** Stateful security groups (`tf-mod-aws-security-group`) remain the primary, per-ENI control; the NACL is the coarse, stateless subnet-level backstop.
+- **Defense-in-depth, not a replacement.** Stateful security groups (`terraform-aws-security-group`) remain the primary, per-ENI control; the NACL is the coarse, stateless subnet-level backstop.
 - **Primary outputs `id` + `arn`**, plus `network_acl_id`, the rule/association maps, and `tags_all`.
 
 ---
@@ -661,7 +661,7 @@ tags_all = { "DataClass" = "internal", "Environment" = "prod", "Name" = "casey-a
 - [Amazon VPC quotas → Network ACLs](https://docs.aws.amazon.com/vpc/latest/userguide/amazon-vpc-limits.html)
 - [Ephemeral ports](https://docs.aws.amazon.com/vpc/latest/userguide/nacl-rules.html#nacl-ephemeral-ports)
 - Terraform: [`aws_network_acl`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/network_acl) · [`aws_network_acl_rule`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/network_acl_rule) · [`aws_network_acl_association`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/network_acl_association)
-- Sibling modules: `tf-mod-aws-vpc`, `tf-mod-aws-security-group`, `tf-mod-aws-lb`, `tf-mod-aws-rds`
+- Sibling modules: `terraform-aws-vpc`, `terraform-aws-security-group`, `terraform-aws-lb`, `terraform-aws-rds`
 - Module internals: `SCOPE.md`
 
 ---

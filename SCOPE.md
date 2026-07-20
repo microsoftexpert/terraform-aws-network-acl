@@ -1,9 +1,9 @@
-# tf-mod-aws-network-acl — SCOPE
+# terraform-aws-network-acl — SCOPE
 
 Composite module for a subnet-level Network ACL. It owns the NACL plus its
 numbered ingress/egress rules and the subnet associations, modeled as `for_each`
 over `map(object(...))`. NACLs are a stateless, defense-in-depth layer above the
-stateful security groups owned by `tf-mod-aws-security-group`.
+stateful security groups owned by `terraform-aws-security-group`.
 
 - **Module type:** Composite
 - **Primary resource (keystone):** `aws_network_acl.this`
@@ -20,15 +20,15 @@ The module manages **all** of the following (allow-list):
 
 Referenced by `id`, never created here:
 
-- VPC — `vpc_id` (from `tf-mod-aws-vpc`)
-- Subnets to associate — `subnet_ids` (from `tf-mod-aws-vpc`)
+- VPC — `vpc_id` (from `terraform-aws-vpc`)
+- Subnets to associate — `subnet_ids` (from `terraform-aws-vpc`)
 
 ## Consumes
 
 | Input | Type | Source module |
 |---|---|---|
-| `vpc_id` | `string` (VPC id) | `tf-mod-aws-vpc` |
-| `subnet_ids` | `map(string)` / `set(string)` (subnet ids) | `tf-mod-aws-vpc` |
+| `vpc_id` | `string` (VPC id) | `terraform-aws-vpc` |
+| `subnet_ids` | `map(string)` / `set(string)` (subnet ids) | `terraform-aws-vpc` |
 
 ## Required IAM permissions
 
@@ -44,7 +44,7 @@ No `iam:PassRole` and no service-linked role required.
 ## AWS Prerequisites
 
 - **No service-linked role** required.
-- **VPC + subnets must exist** — wire `vpc_id` and `subnet_ids` from `tf-mod-aws-vpc`.
+- **VPC + subnets must exist** — wire `vpc_id` and `subnet_ids` from `terraform-aws-vpc`.
 - **Quotas:** 200 NACLs per VPC (adjustable); 20 inbound + 20 outbound rules per
   NACL by default, raisable to 40 inbound + 40 outbound (80 total, with possible
   network-performance impact). Rule numbers must be unique per direction (1–32766;
